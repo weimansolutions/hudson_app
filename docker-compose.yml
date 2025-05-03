@@ -1,0 +1,31 @@
+# docker-compose.yml
+version: "3.8"
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      # Ajusta esto a la URL de tu base de datos externa:
+      DATABASE_URL: postgresql://sa:ZcdcuIMgzdD3vnO58UW3h0Ra0UpSjfaE@dpg-cmcrgdn109ks7392qm4g-a.oregon-postgres.render.com/capibara_db
+      SECRET_KEY: your_secret_key
+    depends_on: []
+    networks:
+      - appnet
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    environment:
+      # Si el frontend utiliza VITE_API_URL en tiempo de build,
+      # reemplázalo aquí. Si en producción tienes la URL fija,
+      # usualmente no hace falta:
+      VITE_API_URL: http://localhost:8000/api/v1
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge

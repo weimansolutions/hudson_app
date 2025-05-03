@@ -1,0 +1,15 @@
+﻿pyjwt
+passlib
+pydantic
+uvicorn
+fastapi
+sqlalchemy
+psycopg2-binary
+pydantic-settings
+databases
+python-dotenv
+psutil
+alembic
+asyncpg
+email-validator
+python-multipart

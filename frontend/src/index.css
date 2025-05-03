@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary:   theme('colors.primary.500');
+  --color-secondary: theme('colors.secondary.500');
+  --color-accent:    theme('colors.accent.400');
+}
+
+
+body {
+  @apply bg-primary-50 text-primary-900 font-sans;
+}
