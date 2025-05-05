@@ -13,3 +13,4 @@ alembic
 asyncpg
 email-validator
 python-multipart
+pyodbc
