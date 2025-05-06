@@ -5,7 +5,7 @@ import { useContext } from 'react'
 import { AuthContext } from '../contexts/AuthContext'
 
 export default function Sidebar() {
-  const { logout, token } = useContext(AuthContext)
+  const { logout, user } = useContext(AuthContext)
   const navigate = useNavigate()
 
   const handleLogout = () => {
@@ -13,130 +13,48 @@ export default function Sidebar() {
     navigate('/login')
   }
 
+  const menuItems = [
+    { label: 'Clientes',       to: '/dashboard/clients',          roles: ['admin','manager'] },
+    { label: 'Puntos de Muestra', to: '/dashboard/sampling-points', roles: ['admin','operator'] },
+    { label: 'Estudios',       to: '/dashboard/studies',          roles: ['admin','scientist'] },
+    { label: 'Análisis',       to: '/dashboard/analyses',         roles: ['admin','scientist'] },
+    { label: 'Resultados',     to: '/dashboard/results',          roles: ['admin','operator'] },
+    { label: 'Reportes',       to: '/dashboard/reports',          roles: ['manager'] }
+  ]
+
+  const allowedItems = user
+  ? menuItems.filter(item =>
+      item.roles.some(role => user.roles.includes(role))
+    )
+  : []
+  
   return (
     <aside className="w-64 bg-white shadow-lg h-screen sticky top-0 p-6 flex flex-col justify-between">
       <div>
         <h2 className="text-2xl font-bold text-primary-700 mb-6">WaterLab</h2>
 
         <nav className="space-y-2">
+        {allowedItems.map(item => (
           <NavLink
-            to="/dashboard/clients"
+            key={item.to}
+            to={item.to}
             className={({ isActive }) =>
               `block py-2 px-4 rounded-lg transition ${
                 isActive ? 'bg-primary-100 text-primary-800' : 'hover:bg-primary-50'
               }`
             }
           >
-            Clientes
+            {item.label}
           </NavLink>
-
-          <NavLink
-            to="/dashboard/sampling-points"
-            className={({ isActive }) =>
-              `block py-2 px-4 rounded-lg transition ${
-                isActive ? 'bg-primary-100 text-primary-800' : 'hover:bg-primary-50'
-              }`
-            }
-          >
-            Puntos de muestreo
-          </NavLink>
-
-          <NavLink
-            to="/dashboard/studies"
-            className={({ isActive }) =>
-              `block py-2 px-4 rounded-lg transition ${
-                isActive ? 'bg-primary-100 text-primary-800' : 'hover:bg-primary-50'
-              }`
-            }
-          >
-            Estudios
-          </NavLink>
-
-          <NavLink
-            to="/dashboard/analyses"
-            className={({ isActive }) =>
-              `block py-2 px-4 rounded-lg transition ${
-                isActive ? 'bg-primary-100 text-primary-800' : 'hover:bg-primary-50'
-              }`
-            }
-          >
-            Análisis
-          </NavLink>
-
-          <NavLink
-            to="/dashboard/results"
-            className={({ isActive }) =>
-              `block py-2 px-4 rounded-lg transition ${
-                isActive ? 'bg-primary-100 text-primary-800' : 'hover:bg-primary-50'
-              }`
-            }
-          >
-            Resultados
-          </NavLink>
-
-          <NavLink
-            to="/dashboard/reports"
-            className={({ isActive }) =>
-              `block py-2 px-4 rounded-lg transition ${
-                isActive ? 'bg-primary-100 text-primary-800' : 'hover:bg-primary-50'
-              }`
-            }
-          >
-            Informes
-          </NavLink>
+        ))}
         </nav>
 
-        {token && (
-          <>
-            <div className="mt-8 border-t pt-4">
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">
-                Administración
-              </p>
-              <NavLink
-                to="/dashboard/users"
-                className={({ isActive }) =>
-                  `block py-2 px-4 rounded-lg transition ${
-                    isActive ? 'bg-primary-100 text-primary-800' : 'hover:bg-primary-50'
-                  }`
-                }
-              >
-                Usuarios
-              </NavLink>
-              <NavLink
-                to="/dashboard/roles"
-                className={({ isActive }) =>
-                  `block py-2 px-4 rounded-lg transition ${
-                    isActive ? 'bg-primary-100 text-primary-800' : 'hover:bg-primary-50'
-                  }`
-                }
-              >
-                Roles & Permisos
-              </NavLink>
-            </div>
-
-            <div className="mt-8 border-t pt-4">
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">
-                Cuenta
-              </p>
-              <NavLink
-                to="/dashboard/profile"
-                className={({ isActive }) =>
-                  `block py-2 px-4 rounded-lg transition ${
-                    isActive ? 'bg-primary-100 text-primary-800' : 'hover:bg-primary-50'
-                  }`
-                }
-              >
-                Perfil
-              </NavLink>
-              <button
+        <button
                 onClick={handleLogout}
                 className="block w-full text-left py-2 px-4 rounded-lg hover:bg-red-100 text-red-600 transition"
               >
                 Cerrar sesión
               </button>
-            </div>
-          </>
-        )}
       </div>
     </aside>
 )

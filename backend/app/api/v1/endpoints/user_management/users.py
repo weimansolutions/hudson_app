@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 from app.schemas.user import UserCreate, UserUpdate, UserResponse, Role
 from app.services.user_service import create_user_service, update_user_service
 from app.crud import user as user_crud, role as role_crud
-from app.utils.dependencies import get_db, permission_required, role_required
+from app.utils.dependencies import get_db, permission_required, role_required,get_current_user
+from app.models.user import User as UserModel
+
 
 router = APIRouter()
 
@@ -12,6 +14,10 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = create_user_service(db, user)
     return UserResponse.from_orm(db_user)
 
+@router.get("/me", response_model=UserResponse, tags=["User Management"])
+def read_current_user_me(current_user: UserModel = Depends(get_current_user)):
+    return UserResponse.from_orm(current_user)
+    
 @router.get("/{user_id}", response_model=UserResponse, dependencies=[Depends(permission_required("read_user"))])
 def get_single_user(
     user_id: int,
@@ -68,3 +74,5 @@ def remove_role_from_user_endpoint(user_id: int, role_id: int, db: Session = Dep
         raise HTTPException(status_code=404, detail="Role not found")
     user_crud.remove_role_from_user(db, db_user, db_role)
     return UserResponse.from_orm(db_user)
+
+
