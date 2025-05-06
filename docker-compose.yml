@@ -18,11 +18,11 @@ services:
     build: ./frontend
     ports:
       - "3000:80"
-    environment:
+    #environment:
       # Si el frontend utiliza VITE_API_URL en tiempo de build,
       # reemplázalo aquí. Si en producción tienes la URL fija,
       # usualmente no hace falta:
-      VITE_API_URL: http://localhost:8000/api/v1
+      #VITE_API_URL: http://localhost:8000/api/v1
     networks:
       - appnet
 

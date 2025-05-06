@@ -1,24 +1,21 @@
-# frontend/Dockerfile
-FROM node:20-alpine
-
+# 1) Etapa de build con Vite
+FROM node:20-alpine AS build
 WORKDIR /app
 
-# Copia package.json e instala deps
+# Instala deps
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copia el resto
+COPY .env .env
+
+# Copia el resto (incluyendo .env si existe)
 COPY . .
 
-# Construye la app estática
+# Aquí Vite inyecta import.meta.env.VITE_API_URL
 RUN npm run build
 
-# Usa un servidor ligero para servir estático
+# 2) Etapa de producción con Nginx
 FROM nginx:stable-alpine
-COPY --from=0 /app/dist /usr/share/nginx/html
-
-# Expón el puerto 80
+COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80
-
-# Inicia nginx
 CMD ["nginx", "-g", "daemon off;"]

@@ -277,7 +277,7 @@ def create_roles_and_permissions(db: SessionLocal):
         "add_permission_to_role", "remove_permission_from_role",
         "create_user", "read_user", "update_user", "delete_user", 
         "read_all_users", "assign_role_to_user", "remove_role_from_user", 
-        "generate_token"
+        "generate_token","read_hudson"
     ]
 
     # Create permissions and assign to admin role
@@ -299,7 +299,42 @@ def check_user_exists(username):
         else:
             print(f"User '{username}' does not exist in the database.")
 
+def seed_admin():
+    import os
+    from app.schemas.user import UserCreate
+    # Importa correctamente de cada módulo
+    from app.crud.user import get_user_by_username, create_user as create_user_crud, assign_role_to_user
+    from app.crud.role import get_role_by_name
+    from app.utils.security import get_password_hash
 
+    username  = os.getenv("ADMIN_USER")
+    raw_pass  = os.getenv("ADMIN_PASSWORD")
+    email     = os.getenv("ADMIN_EMAIL")
+    fullname  = os.getenv("ADMIN_FULLNAME")
+
+    db = SessionLocal()
+    try:
+        # 1) Comprueba si ya existe
+        user = get_user_by_username(db, username)
+        if not user:
+            # 2) Hashea la contraseña y crea el esquema Pydantic
+            
+            user_in = UserCreate(
+                username=username,
+                email=email,
+                fullname=fullname,
+                password=raw_pass
+            )
+            # 3) Crea el usuario
+            user = create_user_crud(db, user_in)
+            print(f"⚡ Created default admin '{username}'")
+
+        # 4) Asigna el rol “admin”
+        admin_role = get_role_by_name(db, "admin")
+        assign_role_to_user(db, user, admin_role)
+
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":
@@ -410,4 +445,5 @@ if __name__ == "__main__":
     if args.create_roles_and_permissions:
         with next(get_db()) as db:
             create_roles_and_permissions(db)
+            seed_admin()
 
