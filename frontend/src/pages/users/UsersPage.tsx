@@ -1,99 +1,189 @@
-// src/pages/inventory/InventoryPage.tsx
 import React, { useState, useEffect, useMemo } from 'react'
 import api from '../../api'
+import UserSidebar from '../../components/UserSidebar'
 
-interface StockItem {
-  [key: string]: any
+interface User {
+  id: number
+  username: string
+  email: string
+  full_name: string | null
+  roles: string[]
 }
 
-const InventoryPage: React.FC = () => {
-  const [items, setItems] = useState<StockItem[]>([])
+const UsersPage: React.FC = () => {
+  const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [minQty, setMinQty] = useState<number | ''>('')
-  const [maxQty, setMaxQty] = useState<number | ''>('')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
-  useEffect(() => {
-    api
-      .get<StockItem[]>('/users')
-      .then(res => setItems(res.data))
+  const fetchUsers = () => {
+    setLoading(true)
+    api.get<User[]>('/users')
+      .then(res => setUsers(res.data))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
-  }, [])
+  }
 
-  const filteredItems = useMemo(() => {
-    return items.filter(item => {
-      const values = Object.values(item).map(String).join(' ').toLowerCase()
-      if (!values.includes(searchTerm.toLowerCase())) {
-        return false
+  useEffect(fetchUsers, [])
+
+  const filtered = useMemo(() => {
+    return users.filter(u =>
+      [u.id, u.username, u.email, u.full_name]
+        .map(v => (v != null ? String(v) : ''))
+        .join(' ')
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+    )
+  }, [users, searchTerm])
+
+  const openSidebar = (user: User | null = null) => {
+    setSelectedUser(user)
+    setSidebarOpen(true)
+  }
+  const closeSidebar = () => {
+    setSidebarOpen(false)
+    setSelectedUser(null)
+  }
+  interface SavePayload {
+    id?: number
+    username: string
+    email: string
+    full_name: string
+    password?: string
+    roleIds: number[]
+    roleNames: string[]
+    originalRoleIds?: number[]
+    }
+
+  const handleSave = async (data: SavePayload) => {
+    try {
+      if (!data.id) {
+        // CREAR
+        const { roleIds, roleNames, password, ...userData } = data
+        const res = await api.post('/users', {
+          ...userData,
+          roles: roleNames,
+          password,
+        })
+        const newUserId = res.data.id
+        // asignar roles uno a uno
+        await Promise.all(
+          roleIds.map(rid =>
+            api.post(`/users/${newUserId}/roles/${rid}`)
+          )
+        )
+      } else {
+
+       await api.put(`/users/${data.id}`, {
+         username: data.username,
+         email: data.email,
+         full_name: data.full_name,
+       })
+
+       // Roles a añadir:
+       const toAdd = data.roleIds.filter(
+         rid => !(data.originalRoleIds || []).includes(rid)
+       )
+       // Roles a quitar:
+       const toRemove = (data.originalRoleIds || []).filter(
+         rid => !data.roleIds.includes(rid)
+       )
+
+       // Llamadas en paralelo
+       await Promise.all([
+         ...toAdd.map(rid =>
+           api.post(`/users/${data.id}/roles/${rid}`)
+         ),
+         ...toRemove.map(rid =>
+           api.delete(`/users/${data.id}/roles/${rid}`)
+         ),
+       ])
+       
       }
-      // Filtrar por cantidad si existe un campo numérico
-      const qty = item.quantity ?? item.Stock ?? item.stock ?? null
-      if (typeof qty === 'number') {
-        if (minQty !== '' && qty < minQty) return false
-        if (maxQty !== '' && qty > maxQty) return false
-      }
-      return true
-    })
-  }, [items, searchTerm, minQty, maxQty])
+      fetchUsers()
+      closeSidebar()
+    } catch (err: any) {
+      console.error(err)
+      alert('Error al guardar usuario: ' + err.message)
+    }
+  }
 
-  if (loading) return <div>Cargando inventario...</div>
-  if (error) return <div>Error: {error}</div>
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('¿Confirma que desea eliminar este usuario?')) return
+    try {
+      await api.delete(`/users/${id}`)
+      fetchUsers()
+      closeSidebar()
+    } catch (err: any) {
+      console.error(err)
+      alert('Error al eliminar usuario: ' + err.message)
+    }
+  }
 
-  const columns = items.length > 0 ? Object.keys(items[0]) : []
+  if (loading) return <div className="p-6">Cargando usuarios...</div>
+  if (error)   return <div className="p-6 text-red-600">Error: {error}</div>
 
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Inventario - Stock Actual</h1>
-      <div className="flex space-x-4 mb-4">
+    <div className="p-6 pb-12">
+      <h1 className="text-2xl font-bold mb-4">Usuarios</h1>
+
+      <div className="flex items-center space-x-4 mb-4">
         <input
           type="text"
           placeholder="Buscar..."
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
-          className="border px-3 py-2 rounded"
+          className="border px-3 py-2 rounded flex-1"
         />
-        <input
-          type="number"
-          placeholder="Cantidad mínima"
-          value={minQty}
-          onChange={e => setMinQty(e.target.value === '' ? '' : Number(e.target.value))}
-          className="border px-3 py-2 rounded w-32"
-        />
-        <input
-          type="number"
-          placeholder="Cantidad máxima"
-          value={maxQty}
-          onChange={e => setMaxQty(e.target.value === '' ? '' : Number(e.target.value))}
-          className="border px-3 py-2 rounded w-32"
-        />
+        <button
+          onClick={() => openSidebar(null)}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Crear Nuevo Usuario
+        </button>
       </div>
-      <div className="overflow-x-auto">
+
+      <div className="overflow-x-auto overflow-y-visible">
         <table className="min-w-full bg-white">
           <thead>
-            <tr>
-              {columns.map(col => (
-                <th key={col} className="py-2 px-4 border">{col}</th>
-              ))}
+            <tr className="bg-gray-100">
+              <th className="py-2 px-4 border w-16">ID</th>
+              <th className="py-2 px-4 border">Username</th>
+              <th className="py-2 px-4 border">Email</th>
+              <th className="py-2 px-4 border">Nombre Completo</th>
             </tr>
           </thead>
           <tbody>
-            {filteredItems.map((item, idx) => (
-              <tr key={idx}>
-                {columns.map(col => (
-                  <td key={col} className="py-2 px-4 border">{item[col]}</td>
-                ))}
+            {filtered.map(user => (
+              <tr
+                key={user.id}
+                className="hover:bg-gray-50 cursor-pointer"
+                onClick={() => openSidebar(user)}
+              >
+                <td className="py-2 px-4 border">{user.id}</td>
+                <td className="py-2 px-4 border">{user.username}</td>
+                <td className="py-2 px-4 border">{user.email}</td>
+                <td className="py-2 px-4 border">{user.full_name ?? ''}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        {filteredItems.length === 0 && (
+        {filtered.length === 0 && (
           <div className="mt-4 text-center text-gray-500">No hay resultados.</div>
         )}
       </div>
+
+      <UserSidebar
+        isOpen={sidebarOpen}
+        user={selectedUser}
+        onClose={closeSidebar}
+        onSave={handleSave}
+        onDelete={handleDelete}
+      />
     </div>
   )
 }
 
-export default InventoryPage
+export default UsersPage
