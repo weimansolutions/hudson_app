@@ -1,21 +1,24 @@
+// src/pages/Dashboard.tsx
 import { useEffect, useState } from 'react'
 import api from '../api'
 
-interface Client {
+interface User {
   id: number
-  name: string
-  contact_email?: string
+  username: string
+  email?: string
+  full_name?: string
+  roles?: string[]
 }
 
 export default function Dashboard() {
-  const [clients, setClients] = useState<Client[]>([])
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    api.get('/water/clients/')
-      .then(resp => setClients(resp.data))
-      .catch(err => setError('Error al cargar clientes'))
+    api.get<User>('/users/me')
+      .then(resp => setUser(resp.data))
+      .catch(() => setError('Error al cargar datos del usuario'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -30,8 +33,11 @@ export default function Dashboard() {
         >
           <circle
             className="opacity-25"
-            cx="12" cy="12" r="10"
-            stroke="currentColor" strokeWidth="4"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
           />
           <path
             className="opacity-75"
@@ -47,35 +53,26 @@ export default function Dashboard() {
     return <p className="text-center text-red-600 mt-8">{error}</p>
   }
 
+  if (!user) {
+    return <p className="text-center text-gray-500 mt-8">Usuario no encontrado.</p>
+  }
+
   return (
     <div className="space-y-8">
       <h1 className="text-5xl font-extrabold text-primary-700">Dashboard</h1>
 
       <section>
-        <h2 className="text-3xl font-semibold text-primary-600 mb-6">Clientes</h2>
-        {clients.length === 0 ? (
-          <p className="text-center text-gray-500">No hay clientes registrados.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {clients.map(client => (
-              <ClientCard key={client.id} client={client} />
-            ))}
-          </div>
-        )}
+        <h2 className="text-3xl font-semibold text-primary-600 mb-6">Mi Perfil</h2>
+        <div className="bg-white p-6 rounded-xl shadow hover:shadow-xl transition">
+          <p><strong>ID:</strong> {user.id}</p>
+          <p><strong>Usuario:</strong> {user.username}</p>
+          {user.full_name && <p><strong>Nombre:</strong> {user.full_name}</p>}
+          {user.email && <p><strong>Email:</strong> {user.email}</p>}
+          {user.roles && (
+            <p><strong>Roles:</strong> {user.roles.join(', ')}</p>
+          )}
+        </div>
       </section>
-
-      {/* Aquí puedes agregar más secciones para puntos, estudios, etc. */}
-    </div>
-  )
-}
-
-function ClientCard({ client }: { client: Client }) {
-  return (
-    <div className="bg-white p-6 rounded-xl shadow hover:shadow-2xl transition">
-      <h3 className="text-2xl font-medium text-primary-800">{client.name}</h3>
-      {client.contact_email && (
-        <p className="mt-2 text-gray-500">{client.contact_email}</p>
-      )}
     </div>
   )
 }
