@@ -1,61 +1,74 @@
 // src/components/Sidebar.tsx
-
-import { NavLink, useNavigate } from 'react-router-dom'
-import { useContext } from 'react'
+import { useContext, useState } from 'react'
+import { NavLink } from 'react-router-dom'
 import { AuthContext } from '../contexts/AuthContext'
+import { menuGroups } from '../config/menu'
+import { MenuGroup } from '../config/menu'
 
 export default function Sidebar() {
   const { logout, user } = useContext(AuthContext)
-  const navigate = useNavigate()
+  const [isOpen, setIsOpen] = useState(true)
+  const toggle = () => setIsOpen(o => !o)
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  if (!user) return null
 
-  const menuItems = [
-    { label: 'Clientes',       to: '/dashboard/clients',          roles: ['admin','manager'] },
-    { label: 'Puntos de Muestra', to: '/dashboard/sampling-points', roles: ['admin','operator'] },
-    { label: 'Estudios',       to: '/dashboard/studies',          roles: ['admin','scientist'] },
-    { label: 'Análisis',       to: '/dashboard/analyses',         roles: ['admin','scientist'] },
-    { label: 'Resultados',     to: '/dashboard/results',          roles: ['admin','operator'] },
-    { label: 'Reportes',       to: '/dashboard/reports',          roles: ['manager'] }
-  ]
+  // Filtramos cada grupo por roles y luego descartamos los grupos vacíos
+  const allowedGroups: MenuGroup[] = menuGroups
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item =>
+        item.roles.some(role => user.roles.includes(role))
+      )
+    }))
+    .filter(group => group.items.length > 0)
 
-  const allowedItems = user
-  ? menuItems.filter(item =>
-      item.roles.some(role => user.roles.includes(role))
-    )
-  : []
-  
   return (
-    <aside className="w-64 bg-white shadow-lg h-screen sticky top-0 p-6 flex flex-col justify-between">
-      <div>
-        <h2 className="text-2xl font-bold text-primary-700 mb-6">WaterLab</h2>
+    <aside className={`bg-white shadow-lg h-screen sticky top-0 transition-all duration-300 
+                       ${isOpen ? 'w-64 p-6' : 'w-0 overflow-hidden'}`}>
+      <button
+        onClick={toggle}
+        className="mb-4 focus:outline-none"
+      >
+        {isOpen ? '«' : '»'}
+      </button>
 
-        <nav className="space-y-2">
-        {allowedItems.map(item => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              `block py-2 px-4 rounded-lg transition ${
-                isActive ? 'bg-primary-100 text-primary-800' : 'hover:bg-primary-50'
-              }`
-            }
+      {isOpen && (
+        <div className="flex flex-col justify-between h-full">
+          <div>
+            <h2 className="text-2xl font-bold text-primary-700 mb-6">WaterLab</h2>
+
+            {allowedGroups.map(group => (
+              <div key={group.label} className="mb-6">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase px-2 mb-2">
+                  {group.label}
+                </h3>
+                <nav className="space-y-1">
+                  {group.items.map(item => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      className={({ isActive }) =>
+                        `block py-2 px-3 rounded-lg transition ${
+                          isActive ? 'bg-primary-100 text-primary-800' : 'hover:bg-gray-100'
+                        }`
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </nav>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={logout}
+            className="w-full text-left py-2 px-4 rounded-lg hover:bg-red-100 text-red-600 transition"
           >
-            {item.label}
-          </NavLink>
-        ))}
-        </nav>
-
-        <button
-                onClick={handleLogout}
-                className="block w-full text-left py-2 px-4 rounded-lg hover:bg-red-100 text-red-600 transition"
-              >
-                Cerrar sesión
-              </button>
-      </div>
+            Cerrar sesión
+          </button>
+        </div>
+      )}
     </aside>
-)
+  )
 }
