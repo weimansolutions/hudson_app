@@ -1,11 +1,12 @@
 ﻿from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.schemas.user import UserCreate, UserUpdate, UserResponse, Role
-from app.services.user_service import create_user_service, update_user_service
+from app.schemas.user import UserCreate, UserUpdate, UserResponse, Role,UserDataUpdate,PasswordReset,UserOut
+from app.services.user_service import create_user_service, update_user_service,reset_password_service
 from app.crud import user as user_crud, role as role_crud
 from app.utils.dependencies import get_db, permission_required, role_required,get_current_user
 from app.models.user import User as UserModel
-
+from typing import List
+from app.crud.user import get_all_users
 
 router = APIRouter()
 
@@ -28,23 +29,39 @@ def get_single_user(
         raise HTTPException(status_code=404, detail="User not found")
     return UserResponse.from_orm(db_user)
 
-@router.get("/", response_model=list[UserResponse], dependencies=[Depends(permission_required("read_all_users"))])
+@router.get("/", response_model=List[UserOut], dependencies=[Depends(permission_required("read_all_users"))])
 def get_all_users_list(
     skip: int = 0,
     limit: int = 10,
     db: Session = Depends(get_db)
-) -> list[UserResponse]:
-    db_users = user_crud.get_all_users(db, skip, limit)
-    return [UserResponse.from_orm(db_user) for db_user in db_users]
+):
+    # devuelve la lista de dicts con id, username, email, full_name, roles
+    return get_all_users(db, skip, limit)
 
-@router.put("/{user_id}", response_model=UserResponse, dependencies=[Depends(permission_required("update_user"))])
-def update_existing_user(
+@router.put(
+    "/{user_id}",
+    response_model=UserResponse,
+    dependencies=[Depends(permission_required("update_user"))]
+)
+def update_user_data(
     user_id: int,
-    user_update: UserUpdate,
+    payload: UserDataUpdate,
     db: Session = Depends(get_db)
 ) -> UserResponse:
-    db_user = update_user_service(db, user_id, user_update)
+    db_user = update_user_service(db, user_id, payload)
     return UserResponse.from_orm(db_user)
+
+@router.post(
+    "/{user_id}/reset-password",
+    status_code=204,
+    dependencies=[Depends(permission_required("reset_password"))]
+)
+def reset_user_password(
+    user_id: int,
+    payload: PasswordReset,
+    db: Session = Depends(get_db)
+):
+    reset_password_service(db, user_id, payload.new_password)
 
 @router.delete("/{user_id}", status_code=204, dependencies=[Depends(permission_required("delete_user"))])
 def delete_existing_user(

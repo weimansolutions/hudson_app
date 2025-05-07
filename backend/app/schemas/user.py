@@ -15,6 +15,17 @@ class UserCreate(UserBase):
 class UserUpdate(UserBase):
     password: Optional[str] = None
 
+class UserDataUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+    roles: Optional[List[str]] = None
+
+    class Config:
+        orm_mode = True
+
+class PasswordReset(BaseModel):
+    new_password: str
+
 class UserResponse(UserBase):
     id: int
     created_at: datetime
@@ -32,6 +43,16 @@ class UserResponse(UserBase):
     class Config:
         from_attributes = True
 
+class UserOut(BaseModel):
+    id: int
+    username: str
+    email: str
+    full_name: Optional[str]
+    roles: List[str]
+
+    class Config:
+        orm_mode = True
+        
 class User(UserBase):
     id: int
     hashed_password: str

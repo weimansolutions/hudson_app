@@ -2,6 +2,8 @@
 from app.schemas.user import UserCreate, UserUpdate
 from app.crud import user
 from app.utils.security import get_password_hash
+from app.crud.user import reset_password as crud_reset_password
+
 
 def create_user_service(db: Session, user_create: UserCreate):
     # Do not set hashed_password here, handle this in the CRUD function
@@ -14,3 +16,6 @@ def update_user_service(db: Session, user_id: int, user_update: UserUpdate):
         update_data['hashed_password'] = get_password_hash(update_data.pop('password'))
     db_user = user.update_user(db, user_id, update_data)
     return db_user
+
+def reset_password_service(db: Session, user_id: int, new_password: str):
+    return crud_reset_password(db, user_id, new_password)
