@@ -1,38 +1,48 @@
 from sqlalchemy.orm import Session
 from datetime import datetime, date
-from typing import List, Dict
+from typing import List, Dict,Optional
+from ..models.hudson import Inventario as InventarioModel, PedidoCabecera
 
-from ..models.hudson import HudsonRecord
-from ..schemas.hudson import HudsonRecordCreate
-from ..db.database import get_connection
+def get_inventarios(
+    db: Session,
+    codigo: Optional[str] = None,
+    categoria: Optional[str] = None,
+    deposito: Optional[str] = None,
+    estado: Optional[str] = None,
+) -> List[InventarioModel]:
+    query = db.query(InventarioModel)
+    if codigo:
+        query = query.filter(InventarioModel.codigo == codigo)
+    if categoria:
+        query = query.filter(InventarioModel.categoria == categoria)
+    if deposito:
+        query = query.filter(InventarioModel.descr_deposito == deposito)
+    if estado:
+        query = query.filter(InventarioModel.estado == estado)
+    return query.all()
 
+def get_pedidos(
+    db: Session,
+    fecha_desde: date | None = None,
+    fecha_hasta: date | None = None,
+    zona: str | None = None,
+    cliente: str | None = None,
+    pedido_num: int | None = None,
+) -> List[PedidoCabecera]:
+    q = db.query(PedidoCabecera)
+    if fecha_desde:
+        q = q.filter(PedidoCabecera.fecha_pedido >= fecha_desde)
+    if fecha_hasta:
+        q = q.filter(PedidoCabecera.fecha_pedido <= fecha_hasta)
+    if zona:
+        q = q.filter(PedidoCabecera.zona == zona)
+    if cliente:
+        q = q.filter(PedidoCabecera.cliente == cliente)
+    if pedido_num:
+        q = q.filter(PedidoCabecera.pedido == pedido_num)
+    return q.all()
 
-def create_record(db: Session, record_in: HudsonRecordCreate):
-    db_record = HudsonRecord(
-        name=record_in.name,
-        value=record_in.value,
-        created_at=datetime.utcnow()
-    )
-    db.add(db_record)
-    db.commit()
-    db.refresh(db_record)
-    return db_record
-
-
-def get_records(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(HudsonRecord).offset(skip).limit(limit).all()
-
-
-def stock_actual() -> List[Dict]:
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM appStock")
-    columns = [col[0] for col in cursor.description]
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(zip(columns, row)) for row in rows]
-
-
+"""
 def get_pedidos() -> List[Dict]:
     conn = get_connection()
     cursor = conn.cursor()
@@ -48,14 +58,15 @@ def get_seguimiento_pedidos_logistica(
 ) -> List[Dict]:
     conn = get_connection()
     cursor = conn.cursor()
-    query = """
+    query = "" " ajustar comillas
         SELECT *
         FROM zmcLogisticaSeguimientoDetalle
         WHERE fecha_pedido >= ? AND fecha_pedido <= ?
         ORDER BY fecha_pedido ASC;
-    """
+    " "" ajustar comillas 
     cursor.execute(query, (fecha_desde, fecha_hasta))
     columns = [col[0] for col in cursor.description]
     rows = cursor.fetchall()
     conn.close()
     return [dict(zip(columns, row)) for row in rows]
+"""

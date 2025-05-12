@@ -1,49 +1,45 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Dict
+from typing import List, Dict,Optional
 from datetime import date
-
 from app.db.database import get_db
-from app.schemas.hudson import HudsonRecord, HudsonRecordCreate
-from app.crud.hudson import (
-    create_record, get_records,
-    stock_actual, get_pedidos,
-    get_seguimiento_pedidos_logistica
-)
+from app.schemas.hudson import Inventario as InventarioSchema
+from app.crud.hudson import get_inventarios
+from app.services.hudson_service import stock_logyser, agregar_stock
 
 
 router = APIRouter()
 
-@router.post("/", response_model=HudsonRecord)
-def add_record(
-    record: HudsonRecordCreate,
-    db: Session = Depends(get_db)
+@router.get("/", response_model=List[InventarioSchema])
+def read_inventarios(
+    codigo: Optional[str] = None,
+    categoria: Optional[str] = None,
+    deposito: Optional[str] = None,
+    estado: Optional[str] = None,
+    db: Session = Depends(get_db),
 ):
-    return create_record(db, record)
-
-@router.get("/", response_model=List[HudsonRecord])
-def list_records(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(10, ge=1),
-    db: Session = Depends(get_db)
-):
-    return get_records(db, skip, limit)
-
-# Consultas heredadas
-@router.get("/stock", response_model=List[Dict])
-def endpoint_stock_actual():
-    return stock_actual()
-
-@router.get("/pedidos", response_model=List[Dict])
-def endpoint_get_pedidos():
-    return get_pedidos()
-
-@router.get("/seguimiento", response_model=List[Dict])
-def endpoint_seguimiento(
-    fecha_desde: date = Query(..., description="Fecha inicio YYYY-MM-DD"),
-    fecha_hasta: date = Query(..., description="Fecha fin   YYYY-MM-DD")
-):
-    results = get_seguimiento_pedidos_logistica(fecha_desde, fecha_hasta)
-    if not results:
-        raise HTTPException(status_code=404, detail="No se encontraron registros en ese rango de fechas")
+    results = get_inventarios(db, codigo, categoria, deposito, estado)
+    if results is None:
+        raise HTTPException(status_code=404, detail="No se encontraron registros")
     return results
+
+@router.get("/inventario_logyser")
+def read_inventarios_logyser():
+    results = stock_logyser()
+    if results is None:
+        raise HTTPException(status_code=404, detail="No se encontraron registros")
+    return results
+
+@router.get("/pedidos", response_model=List[PedidoCabeceraSchema])
+def read_pedidos(
+    fecha_desde:  date | None = Query(None, alias="desde"),
+    fecha_hasta:  date | None = Query(None, alias="hasta"),
+    zona:         str  | None = Query(None),
+    cliente:      str  | None = Query(None),
+    pedido_num:   int  | None = Query(None, alias="pedido"),
+    db: Session = Depends(get_db),
+):
+    resultados = get_pedidos(db, fecha_desde, fecha_hasta, zona, cliente, pedido_num)
+    if not resultados:
+        raise HTTPException(status_code=404, detail="No se encontraron pedidos")
+    return resultados

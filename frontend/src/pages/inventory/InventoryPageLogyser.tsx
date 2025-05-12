@@ -11,20 +11,15 @@ const InventoryPage: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterCategoria, setFilterCategoria] = useState<string>('')
   const [filterEstado, setFilterEstado] = useState<string>('')
 
   useEffect(() => {
     api
-      .get<StockItem[]>('/hudson')
+      .get<StockItem[]>('/hudson/inventario_logyser')
       .then(res => setItems(res.data))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
-
-  const categorias = useMemo(() => {
-    return Array.from(new Set(items.map(item => item.categoria).filter(Boolean)))
-  }, [items])
 
   const estados = useMemo(() => {
     return Array.from(new Set(items.map(item => item.estado).filter(Boolean)))
@@ -43,17 +38,13 @@ const InventoryPage: React.FC = () => {
       ) {
         return false
       }
-      // filtro por categoría
-      if (filterCategoria && item.categoria !== filterCategoria) {
-        return false
-      }
       // filtro por estado
       if (filterEstado && item.estado !== filterEstado) {
         return false
       }
       return true
     })
-  }, [items, searchTerm, filterCategoria, filterEstado])
+  }, [items, searchTerm, filterEstado])
 
   const handleExport = () => {
     // Determinar columnas dinámicamente
@@ -68,8 +59,8 @@ const InventoryPage: React.FC = () => {
     })
     const worksheet = XLSX.utils.json_to_sheet(dataToExport)
     const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Inventario')
-    XLSX.writeFile(workbook, 'inventario.xlsx')
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Inventario Logyser')
+    XLSX.writeFile(workbook, 'inventario_logyser.xlsx')
   }
 
   if (loading) return <div>Cargando inventario...</div>
@@ -88,18 +79,6 @@ const InventoryPage: React.FC = () => {
           onChange={e => setSearchTerm(e.target.value)}
           className="border px-3 py-2 rounded"
         />
-        <select
-          value={filterCategoria}
-          onChange={e => setFilterCategoria(e.target.value)}
-          className="border px-3 py-2 rounded"
-        >
-          <option value="">Todas las Categorías</option>
-          {categorias.map(cat => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
         <select
           value={filterEstado}
           onChange={e => setFilterEstado(e.target.value)}

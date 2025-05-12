@@ -5,6 +5,8 @@ import MaterialsPage from '../pages/inventory/MaterialsPage'
 import CountsPage from '../pages/inventory/CountsPage'
 import InventoryPage from '../pages/inventory/InventoryPage'
 import UsersPage from '../pages/users/UsersPage'
+import InventoryPageLogyser from '../pages/inventory/InventoryPageLogyser'
+
 // etc. importa aquí todos tus componentes de página
 
 export interface MenuItem {
@@ -34,6 +36,7 @@ export const menuGroups: MenuGroup[] = [
       { label: 'Conteos',    to: '/dashboard/counts',    roles: ['admin','user'], component: CountsPage },
       { label: 'Materiales', to: '/dashboard/materials', roles: ['admin','user'], component: MaterialsPage },
       { label: 'Stock', to: '/dashboard/stock', roles: ['admin','user'], component: InventoryPage },
+      { label: 'Stock Logyser', to: '/dashboard/stock_logyser', roles: ['admin','user'], component: InventoryPageLogyser},
     ]
   },
 ]
