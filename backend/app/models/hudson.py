@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Numeric, Boolean, Integer,Float, Date
+from sqlalchemy import Column, String, Numeric, Boolean, Integer,Float,Date
 from sqlalchemy.ext.declarative import declarative_base
 from app.db.database import Base
 
@@ -18,6 +18,7 @@ class Inventario(Base):
     stock = Column(Float)
     stock_isis = Column(Float)
     pendiente = Column(Float)
+    disponible_logyser = Column(Float)
     categoria = Column(String, index=True)
     estado = Column(String, index=True)
     descr_deposito = Column('DescrDeposito',String, index=True)

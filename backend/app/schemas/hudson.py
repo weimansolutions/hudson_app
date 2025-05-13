@@ -16,6 +16,7 @@ class InventarioBase(BaseModel):
     stock: Optional[float]
     stock_isis: Optional[float]
     pendiente: Optional[float]
+    disponible_logyser : Optional[float]
     categoria: Optional[str]
     estado: Optional[str]
     descr_deposito: Optional[str]
@@ -28,15 +29,15 @@ class Inventario(InventarioBase):
 
 class PedidoCabecSchema(BaseModel):
     pedido: int
-    cliente: str
-    razonsocial: str
-    sucursal: str
-    fecha_pedido: date
-    fecha_administracion: date | None
-    zona: str | None
-    NombreVendedor: str
-    facturas: str | None
-    remitos: str | None
+    cliente: Optional[str] = None
+    razonsocial: Optional[str] = None
+    sucursal: Optional[str] = None
+    fecha_pedido: Optional[date] = None
+    fecha_administracion: Optional[date] = None
+    zona: Optional[str] = None
+    NombreVendedor: Optional[str] = None
+    facturas: Optional[str] = None
+    remitos: Optional[str] = None
     Total_PedCliCab: Decimal | None
     importe_factura: Decimal | None
     canped1: int
